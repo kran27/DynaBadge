@@ -49,40 +49,57 @@ module.exports = async (req, res) => {
                 color = '6a6a6a';
                 color2 = '555555';
             }
-
+            const idRegex = /<div class="playerAvatar profile_header_size (.*?)" data-miniprofile="(.*?)">/;
+            const id = idRegex.exec(data)[2];
+            console.log(id);
 
             if (status == 'Currently In-Game') {
                 status = `${status}: ${game}`;
             }
             status = status.replace("Currently ", "");
-            const badgeUrl = `https://img.shields.io/static/v1?style=${style}&label=${name}&labelColor=171d25&message=${status}&color=${color}&logo=steam&logoColor=white`;
-            https.get(badgeUrl, (badgeRes) => {
+
+            const avatarUrl = `https://store.steampowered.com/actions/ajaxgetavatarpersona?accountid=${id}`;
+            https.get(avatarUrl, (avatarRes) => {
                 let data = '';
-                badgeRes.on('data', (chunk) => {
+                avatarRes.on('data', (chunk) => {
                     data += chunk;
                 });
-                badgeRes.on('end', () => {
-                    res.setHeader('Content-Type', 'image/svg+xml');
-                    const gradient = 
-                    `<linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                avatarRes.on('end', () => {
+                    const avatar = JSON.parse(data).userinfo.avatar_url;
+                    const badgeUrl = `https://img.shields.io/static/v1?style=${style}&label=${name}&labelColor=171d25&message=${status}&color=${color}&logo=steam&logoColor=white`;
+                    https.get(badgeUrl, (badgeRes) => {
+                        let data = '';
+                        badgeRes.on('data', (chunk) => {
+                            data += chunk;
+                        });
+                        badgeRes.on('end', () => {
+                            res.setHeader('Content-Type', 'image/svg+xml');
+                            const gradient =
+                                `<linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
                         <stop offset="5%" style="stop-color:#${color};stop-opacity:1" />
                         <stop offset="95%" style="stop-color:#${color2};stop-opacity:1" />
                     </linearGradient>
                     `;
 
-                    const rectRegex = /<rect x="(.*?)" width="(.*?)" height="(.*?)" fill="#(.*?)"\/>/;
-                    const match = rectRegex.exec(data);
+                            const rectRegex = /<rect x="(.*?)" width="(.*?)" height="(.*?)" fill="#(.*?)"\/>/;
+                            const match = rectRegex.exec(data);
 
-                    if (match) {
-                        const x = match[1];
-                        const width = match[2];
-                        const height = match[3];
+                            const urlRegex = /xlink:href="(.*?)"/
+                            const urlMatch = urlRegex.exec(data);
 
-                        const newRect = `<rect x="${x}" width="${width}" height="${height}" fill="url(#grad1)"/>`;
-                        const newData = data.replace(rectRegex, `${gradient}${newRect}`);
+                            if (match) {
+                                const x = match[1];
+                                const width = match[2];
+                                const height = match[3];
 
-                        res.send(newData);
-                    }
+                                const newRect = `<rect x="${x}" width="${width}" height="${height}" fill="url(#grad1)"/>`;
+                                let newData = data.replace(rectRegex, `${gradient}${newRect}`);
+                                newData = newData.replace(urlMatch[1], avatar);
+
+                                res.send(newData);
+                            }
+                        });
+                    });
                 });
             });
         });

@@ -23,8 +23,10 @@ module.exports = async (req, res) => {
     });
 
     apiRes.on('end', () => {
-      const presenceCount = JSON.parse(data).presence_count;
-      const badgeUrl = `https://img.shields.io/static/v1?style=${style}&label=%20&message=${presenceCount}%20Online&color=5662f6&logo=discord&logoColor=white`;
+      const jsonData = JSON.parse(data);
+      const presenceCount = jsonData.presence_count;
+      const name = jsonData.name;
+      const badgeUrl = `https://img.shields.io/static/v1?style=${style}&label=${name}&labelColor=5662f6&message=${presenceCount}%20Online&color=23a55a&logo=discord&logoColor=white`;
 
       https.get(badgeUrl, (badgeRes) => {
         res.setHeader('Content-Type', 'image/svg+xml');

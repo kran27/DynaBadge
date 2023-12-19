@@ -84,7 +84,7 @@ module.exports = async (req, res) => {
                             const rectRegex = /<rect x="(.*?)" width="(.*?)" height="(.*?)" fill="#(.*?)"\/>/;
                             const match = rectRegex.exec(data);
 
-                            const urlRegex = /xlink:href="(.*?)"/
+                            const urlRegex = /xlink:href="(.*?)"/;
                             const urlMatch = urlRegex.exec(data);
 
                             if (match) {
@@ -94,9 +94,17 @@ module.exports = async (req, res) => {
 
                                 const newRect = `<rect x="${x}" width="${width}" height="${height}" fill="url(#grad1)"/>`;
                                 let newData = data.replace(rectRegex, `${gradient}${newRect}`);
-                                newData = newData.replace(urlMatch[1], avatar);
 
-                                res.send(newData);
+                                https.get(avatar, (response) => {
+                                    const chunks = [];
+                                    response.on('data', (chunk) => chunks.push(chunk));
+                                    response.on('end', () => {
+                                        const imageBuffer = Buffer.concat(chunks);
+                                        const base64Image = imageBuffer.toString('base64');
+                                        newData = newData.replace(urlMatch[1], `data:image/jpeg;base64,${base64Image}`);
+                                        res.send(newData);
+                                    });
+                                });
                             }
                         });
                     });

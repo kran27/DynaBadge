@@ -59,10 +59,20 @@ module.exports = async (req, res) => {
               const icon = djsonData.icon;
               if (icon != "null" && icon) {
                 const avatar = `https://cdn.discordapp.com/icons/${guildId}/${icon}.png`;
-                const urlRegex = /xlink:href="(.*?)"/
-                const urlMatch = urlRegex.exec(data);
-                let newData = data.replace(urlMatch[1], avatar);
-                res.send(newData);
+              
+                https.get(avatar, (response) => {
+                  const chunks = [];
+                  response.on('data', (chunk) => chunks.push(chunk));
+                  response.on('end', () => {
+                    const imageBuffer = Buffer.concat(chunks);
+                    const base64Image = imageBuffer.toString('base64');
+              
+                    const urlRegex = /xlink:href="(.*?)"/;
+                    const urlMatch = urlRegex.exec(data);
+                    let newData = data.replace(urlMatch[1], `data:image/png;base64,${base64Image}`);
+                    res.send(newData);
+                  });
+                });
               }
               else {
                 res.send(data);

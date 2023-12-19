@@ -5,6 +5,10 @@ module.exports = async (req, res) => {
 
   const queryObject = url.parse(req.url,true).query;
   const guildId = queryObject.guild;
+  var style = queryObject.style;
+  if (!style || style == 'social') {
+    style = 'flat-square';
+  }
 
   if (!guildId) {
     res.status(400).send('Error: Missing guild query parameter');
@@ -20,7 +24,7 @@ module.exports = async (req, res) => {
 
     apiRes.on('end', () => {
       const presenceCount = JSON.parse(data).presence_count;
-      const badgeUrl = `https://img.shields.io/static/v1?style=flat-square&label=%20&message=${presenceCount}%20Online&color=5662f6&logo=discord&logoColor=white`;
+      const badgeUrl = `https://img.shields.io/static/v1?style=${style}&label=%20&message=${presenceCount}%20Online&color=5662f6&logo=discord&logoColor=white`;
 
       https.get(badgeUrl, (badgeRes) => {
         res.setHeader('Content-Type', 'image/svg+xml');
